@@ -13,7 +13,7 @@
         :root {
             --primary-color: #4338ca;
             --background-color: #f0f2f5;
-            --card-background: #ffffff;
+            --card-background: #f8f9fa; /* Fondo de la app cambiado a gris muy claro */
             --text-primary: #1f2937;
             --text-secondary: #6b7280;
         }
@@ -55,13 +55,14 @@
         .screen {
             transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column;
         }
         .screen.hidden {
             transform: translateX(100%);
             opacity: 0;
             pointer-events: none;
         }
-        #main-screen.hidden {
+        #main-screen.slide-out {
             transform: translateX(-100%);
         }
         
@@ -78,20 +79,22 @@
             background-color: white; border-radius: 12px;
             padding: 24px; width: 90%; max-width: 500px;
             transform: scale(0.95); transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
         .modal-overlay.visible .modal-content { transform: scale(1); }
 
         .main-content {
-            height: calc(100% - 84px);
+            flex-grow: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
         
-        .cuff-selector {
+        .position-selector {
             border-bottom: 2px solid transparent;
             transition: all 0.2s ease;
         }
-        .cuff-selector.active {
+        .position-selector.active {
             border-bottom-color: var(--primary-color);
             color: var(--primary-color);
             font-weight: 600;
@@ -118,12 +121,31 @@
         }
         .specs-table tr:nth-child(even) { background-color: #f9fafb; }
         .specs-table tr:hover { background-color: #f3f4f6; }
+        
+        /* Estilo para la mejor candidata en la tabla de ViVor */
+        .best-candidate {
+            background-color: #d1fae5 !important; /* Verde claro */
+            font-weight: 600;
+        }
+        .best-candidate td {
+            color: #064e3b; /* Verde oscuro para el texto */
+        }
+
+        .subtype-selector.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        #vivor-results {
+            max-height: 45vh; /* Sets a maximum height for the results */
+            overflow-y: auto; /* Adds a scrollbar if content overflows */
+        }
     </style>
 </head>
 <body>
 
     <div id="app" class="relative overflow-hidden">
-        <!-- Pantalla Principal (Lista de Válvulas) -->
+        <!-- Main Screen (Brand List) -->
         <div id="main-screen" class="screen w-full h-full">
             <header class="bg-indigo-800 text-white p-5 shadow-lg lg:rounded-t-xl flex justify-between items-center">
                 <div>
@@ -135,12 +157,12 @@
                 </button>
             </header>
             <main class="p-4 md:p-6 main-content">
-                <div id="valve-list" class="lg:desktop-grid"></div>
+                <div id="brand-list" class="lg:desktop-grid"></div>
             </main>
         </div>
 
-        <!-- Pantalla de Detalles de la Válvula -->
-        <div id="detail-screen" class="screen bg-white hidden lg:rounded-xl"></div>
+        <!-- Brand Detail Screen -->
+        <div id="detail-screen" class="screen hidden lg:rounded-xl"></div>
     </div>
 
     <!-- Modals -->
@@ -150,6 +172,7 @@
         <div class="modal-content">
             <h2 class="text-xl font-bold mb-4" data-lang-key="menu_title"></h2>
             <div class="space-y-2">
+                <button class="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg" id="vivor-button" data-lang-key="menu_vivor"></button>
                 <button class="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg" id="lang-button" data-lang-key="menu_language"></button>
                 <button class="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg" id="about-button" data-lang-key="menu_about"></button>
                 <button class="w-full text-left p-3 bg-gray-100 hover:bg-gray-200 rounded-lg" id="disclaimer-button" data-lang-key="menu_disclaimer"></button>
@@ -189,13 +212,43 @@
         </div>
     </div>
 
+    <div id="vivor-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4" data-lang-key="vivor_title"></h2>
+            <div class="mb-4">
+                <label for="vivor-input" class="block text-sm font-medium text-gray-700 mb-1" data-lang-key="vivor_input_label"></label>
+                <input type="number" id="vivor-input" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="e.g., 21">
+            </div>
+            <!-- INICIO: Selector de Posición -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2" data-lang-key="vivor_position_label"></label>
+                <div class="flex gap-x-6">
+                    <label for="vivor-pos-aortic" class="flex items-center space-x-2 cursor-pointer">
+                        <input type="radio" id="vivor-pos-aortic" name="vivor-position" value="aortic" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" checked>
+                        <span class="text-sm text-gray-700" data-lang-key="aortic_valves"></span>
+                    </label>
+                    <label for="vivor-pos-mitral" class="flex items-center space-x-2 cursor-pointer">
+                        <input type="radio" id="vivor-pos-mitral" name="vivor-position" value="mitral" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                         <span class="text-sm text-gray-700" data-lang-key="mitral_valves"></span>
+                    </label>
+                </div>
+            </div>
+            <!-- FIN: Selector de Posición -->
+            <button id="vivor-calculate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors" data-lang-key="vivor_calculate"></button>
+            <div id="vivor-results" class="mt-6"></div>
+        </div>
+    </div>
+
     <script>
         // --- INTERNATIONALIZATION (i18n) & DATA ---
         const translations = {
             en: {
                 main_title: "Mechanical Valves Guide",
-                main_subtitle: "Select a prosthesis to see its details",
+                main_subtitle: "Select a brand to see its models",
+                aortic_valves: "Aortic",
+                mitral_valves: "Mitral",
                 menu_title: "Options",
+                menu_vivor: "ViVor Estimate",
                 menu_language: "Language",
                 menu_about: "About",
                 menu_disclaimer: "Disclaimer",
@@ -207,27 +260,23 @@
                 disclaimer_content: "This tool is for informational purposes only and is not a substitute for professional medical advice, diagnosis, or treatment. The creators are not responsible for any errors or omissions.",
                 contact_title: "Contact",
                 contact_content: "For questions or feedback, please reach out to the development team at hcuvicicor@gmail.com.",
-                details_description: "Description",
-                details_features: "Main Features:",
                 details_images: "Images",
                 details_specs: "Technical Specifications",
-                header_size: "Size (mm)",
-                header_tad: "Tissue Annulus Dia. (mm)",
-                header_goa: "Geometric Orifice Area (cm²)",
-                header_ih: "Implant Height (mm)",
-                header_oho: "Open Height Overall (mm)",
-                header_cod: "Cuff Outer Dia. (mm)",
-                header_model: "Model",
-                header_iph: "Inflow Profile Height (mm)",
-                header_oph: "Outflow Profile Height (mm)",
-                header_id: "Internal Dia. (mm)",
-                header_od: "Outer Dia. (mm)",
-                header_oa: "Orifice Area (cm²)",
+                vivor_title: "ViVor Estimate",
+                vivor_input_label: "Enter surgical valve true internal diameter (mm):",
+                vivor_position_label: "Position:",
+                vivor_calculate: "Calculate",
+                vivor_results_title: "Suitable Valves for ViVor",
+                vivor_no_results: "No suitable bileaflet valves found for the specified diameter and position.",
+                header_size: "Size (mm)", header_tad: "Tissue Annulus Dia. (mm)", header_goa: "Geometric Orifice Area (cm²)", header_ih: "Implant Height (mm)", header_oho: "Open Height Overall (mm)", header_cod: "Cuff Outer Dia. (mm)", header_model: "Model", header_iph: "Inflow Profile Height (mm)", header_oph: "Outflow Profile Height (mm)", header_id: "Internal Dia. (mm)", header_od: "Outer Dia. (mm)", header_oa: "Orifice Area (cm²)", header_brand: "Brand", header_position: "Position"
             },
             es: {
                 main_title: "Guía de Válvulas Mecánicas",
-                main_subtitle: "Seleccione una prótesis para ver sus detalles",
+                main_subtitle: "Seleccione una marca para ver sus modelos",
+                aortic_valves: "Aórticas",
+                mitral_valves: "Mitrales",
                 menu_title: "Opciones",
+                menu_vivor: "Estimar ViVor",
                 menu_language: "Idioma",
                 menu_about: "Acerca de",
                 menu_disclaimer: "Descargo de Responsabilidad",
@@ -239,219 +288,117 @@
                 disclaimer_content: "Esta herramienta es solo para fines informativos y no sustituye el consejo, diagnóstico o tratamiento médico profesional. Los creadores no se hacen responsables de errores u omisiones.",
                 contact_title: "Contacto",
                 contact_content: "Para preguntas o sugerencias, contacte al equipo de desarrollo en hcuvicicor@gmail.com.",
-                details_description: "Descripción",
-                details_features: "Características principales:",
                 details_images: "Imágenes",
                 details_specs: "Especificaciones Técnicas",
-                header_size: "Tamaño (mm)",
-                header_tad: "Diám. Anillo Tisular (mm)",
-                header_goa: "Área Orificio Geom. (cm²)",
-                header_ih: "Altura Implante (mm)",
-                header_oho: "Altura Total Abierta (mm)",
-                header_cod: "Diám. Ext. Manguito (mm)",
-                header_model: "Modelo",
-                header_iph: "Perfil Flujo Ent. (mm)",
-                header_oph: "Altura Flujo Sal. (mm)",
-                header_id: "Diám. Interno (mm)",
-                header_od: "Diám. Externo (mm)",
-                header_oa: "Área Orificio (cm²)",
+                vivor_title: "Estimación ViVor",
+                vivor_input_label: "Introduzca el diámetro interno real (mm) de la válvula quirúrgica:",
+                vivor_position_label: "Posición:",
+                vivor_calculate: "Calcular",
+                vivor_results_title: "Válvulas Aptas para ViVor",
+                vivor_no_results: "No se encontraron válvulas bidisco adecuadas para el diámetro y posición especificados.",
+                header_size: "Tamaño (mm)", header_tad: "Diám. Anillo Tisular (mm)", header_goa: "Área Orificio Geom. (cm²)", header_ih: "Altura Implante (mm)", header_oho: "Altura Total Abierta (mm)", header_cod: "Diám. Ext. Manguito (mm)", header_model: "Modelo", header_iph: "Perfil Flujo Ent. (mm)", header_oph: "Altura Flujo Sal. (mm)", header_id: "Diám. Interno (mm)", header_od: "Diám. Externo (mm)", header_oa: "Área Orificio (cm²)", header_brand: "Marca", header_position: "Posición"
             }
         };
 
         const valvesData = [
             {
-                id: 'sjm-regent', name: 'SJM Regent', manufacturer: 'Abbott (St. Jude Medical)',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=SJM+Regent',
- 		fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=SJM+Fluoroscopy',
- 		design: 'https://placehold.co/600x400/e8e8e8/333333?text=SJM+Design',
- 		imagen: 'https://placehold.co/600x400/e8e8e8/333333?text=Imagen+SJM' },
-                description: {
-                    en: 'The SJM Regent™ valve is a bileaflet mechanical heart valve designed for supra-annular implantation. It offers the largest effective orifice area for a given diameter, with a low profile that minimizes outflow tract obstruction.',
-                    es: 'La válvula SJM Regent™ es una válvula cardíaca mecánica bileaflet diseñada para la implantación en posición supra-anular. Ofrece el mayor área de orificio efectivo para un diámetro dado, con un perfil bajo que minimiza la obstrucción del tracto de salida.'
-                },
-                features: [
-                    { en: 'Supra-annular design for maximum flow', es: 'Diseño supra-anular para máximo flujo' },
-                    { en: 'Rotation mechanism built into the carbon rim', es: 'Mecanismo de rotación integrado en el borde de carbono' },
-                    { en: '85-90° opening angle', es: 'Ángulo de apertura de 85-90°' },
-                    { en: 'Low transvalvular gradients', es: 'Bajos gradientes transvalvulares' }
-                ],
-                cuffs: [
-                    { name: {en: 'Standard Cuff', es: 'Standard Cuff'}, specs: [ { size: 17, tad: 17, goa: 1.9, ih: 6.1, oho: 11.6, cod: 24.7 }, { size: 19, tad: 19, goa: 2.4, ih: 6.1, oho: 11.6, cod: 24.7 }, { size: 21, tad: 21, goa: 2.9, ih: 7.3, oho: 13.0, cod: 26.7 }, { size: 23, tad: 23, goa: 3.5, ih: 8.0, oho: 14.3, cod: 28.7 }, { size: 25, tad: 25, goa: 4.0, ih: 8.2, oho: 14.6, cod: 30.7 }, { size: 27, tad: 27, goa: 4.7, ih: 9.1, oho: 15.4, cod: 32.7 } ] },
-                    { name: {en: 'FlexCuff', es: 'FlexCuff'}, specs: [ { size: 17, tad: 17, goa: 1.9, ih: 6.1, oho: 11.6, cod: 24.7 }, { size: 19, tad: 19, goa: 2.4, ih: 6.1, oho: 11.6, cod: 27.0 }, { size: 21, tad: 21, goa: 2.9, ih: 7.3, oho: 13.0, cod: 29.0 }, { size: 23, tad: 23, goa: 3.5, ih: 8.0, oho: 14.3, cod: 31.0 }, { size: 25, tad: 25, goa: 4.0, ih: 8.2, oho: 14.6, cod: 33.0 }, { size: 27, tad: 27, goa: 4.7, ih: 9.1, oho: 15.4, cod: 35.0 } ] }
-                ]
+                id: 'sjm', name: 'SJM', manufacturer: 'Abbott (St. Jude Medical)',
+                positions: {
+                    aortic: [
+                        {
+                            subtypeName: {en: 'SJM Regent - Standard Cuff', es: 'SJM Regent - Manguito Estándar'},
+                            images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=SJM+Regent', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=SJM+Fluoroscopy' },
+                            specs: [ { size: 17, tad: 17, goa: 1.9, ih: 6.1, oho: 11.6, cod: 24.7 }, { size: 19, tad: 19, goa: 2.4, ih: 6.1, oho: 11.6, cod: 24.7 }, { size: 21, tad: 21, goa: 2.9, ih: 7.3, oho: 13.0, cod: 26.7 }, { size: 23, tad: 23, goa: 3.5, ih: 8.0, oho: 14.3, cod: 28.7 }, { size: 25, tad: 25, goa: 4.0, ih: 8.2, oho: 14.6, cod: 30.7 }, { size: 27, tad: 27, goa: 4.7, ih: 9.1, oho: 15.4, cod: 32.7 } ]
+                        },
+                        {
+                            subtypeName: {en: 'SJM Regent - FlexCuff', es: 'SJM Regent - FlexCuff'},
+                            images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=SJM+FlexCuff', design: 'https://placehold.co/600x400/e8e8e8/333333?text=SJM+Design' },
+                            specs: [ { size: 17, tad: 17, goa: 1.9, ih: 6.1, oho: 11.6, cod: 24.7 }, { size: 19, tad: 19, goa: 2.4, ih: 6.1, oho: 11.6, cod: 27.0 }, { size: 21, tad: 21, goa: 2.9, ih: 7.3, oho: 13.0, cod: 29.0 }, { size: 23, tad: 23, goa: 3.5, ih: 8.0, oho: 14.3, cod: 31.0 }, { size: 25, tad: 25, goa: 4.0, ih: 8.2, oho: 14.6, cod: 33.0 }, { size: 27, tad: 27, goa: 4.7, ih: 9.1, oho: 15.4, cod: 35.0 } ]
+                        }
+                    ],
+                    mitral: [ { subtypeName: {en: 'SJM Masters - Standard', es: 'SJM Masters - Estándar'}, images: { main: 'https://placehold.co/600x400/c7d2fe/333333?text=SJM+Masters'}, specs: [ { size: 25, tad: 25, goa: 4.0 }, { size: 27, tad: 27, goa: 4.7 } ] } ]
+                }
             },
             {
                 id: 'carbomedics', name: 'CarboMedics', manufacturer: 'CarboMedics (LivaNova)',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=CarboMedics',
-                         fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=CarboMedics+Fluoroscopy',
-                         design: 'https://placehold.co/600x400/e8e8e8/333333?text=CarboMedics+Design' },
-                description: {
-                    en: 'Bileaflet valve with a pyrolytic carbon ring and titanium stiffening band for enhanced durability and performance. Available in multiple configurations to suit different surgical needs.',
-                    es: 'Válvula bileaflet con anillo de carbón pirolítico y anclaje de titanio para una mayor durabilidad y rendimiento. Disponible en múltiples configuraciones para adaptarse a diferentes necesidades quirúrgicas.'
-                },
-                features: [
-                    { en: 'Pyrolytic carbon ring with titanium reinforcement', es: 'Anillo de carbono pirolítico con refuerzo de titanio' },
-                    { en: 'Open pivots for better washing', es: 'Pivotes abiertos para mejor lavado' },
-                    { en: 'Low-profile design', es: 'Diseño de bajo perfil' },
-                    { en: 'Multiple configurations (Standard, Top Hat, Orbis)', es: 'Múltiples configuraciones (Standard, Top Hat, Orbis)' }
-                ],
-                cuffs: [
-                    { name: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, specs: [ { size: 19, tad: 18.8, id: 14.7, oho: 6.2, goa: 1.59, model: 'RS-019' }, { size: 21, tad: 20.8, id: 16.7, oho: 6.6, goa: 2.07, model: 'RS-021' }, { size: 23, tad: 22.6, id: 18.5, oho: 7.3, goa: 2.56, model: 'RS-023' }, { size: 25, tad: 25.0, id: 20.5, oho: 7.7, goa: 3.16, model: 'RS-025' }, { size: 27, tad: 27.0, id: 22.5, oho: 8.4, goa: 3.84, model: 'RS-027' }, { size: 29, tad: 29.0, id: 24.2, oho: 8.7, goa: 4.44, model: 'RS-029' } ] },
-                    { name: { en: 'Reduced Aortic', es: 'Aórtica Reducida' }, specs: [ { size: 19, tad: 18.8, id: 14.7, oho: 6.2, goa: 1.59, model: 'AS-019' }, { size: 21, tad: 20.8, id: 16.7, oho: 6.6, goa: 2.07, model: 'AS-021' }, { size: 23, tad: 22.6, id: 18.5, oho: 7.3, goa: 2.56, model: 'AS-023' }, { size: 25, tad: 25.0, id: 20.5, oho: 7.7, goa: 3.16, model: 'AS-025' }, { size: 27, tad: 27.0, id: 22.5, oho: 8.4, goa: 3.84, model: 'AS-027' }, { size: 29, tad: 29.0, id: 24.2, oho: 8.7, goa: 4.44, model: 'AS-029' }, { size: 31, tad: 31.0, id: 26.2, oho: 8.7, goa: 4.44, model: 'AS-031' } ] },
-                    { name: { en: 'Top Hat Aortic', es: 'Aórtica Top Hat' }, specs: [ { size: 19, tad: 19.0, id: 14.7, oho: 6.2, goa: 1.59, model: 'TS-019' }, { size: 21, tad: 21.0, id: 16.7, oho: 6.5, goa: 2.07, model: 'TS-021' }, { size: 23, tad: 23.0, id: 18.5, oho: 7.3, goa: 2.56, model: 'TS-023' }, { size: 25, tad: 25.0, id: 20.5, oho: 7.7, goa: 3.16, model: 'TS-025' }, { size: 27, tad: 27.0, id: 22.5, oho: 8.4, goa: 3.84, model: 'TS-027' } ] }
-                ]
+                positions: {
+                    aortic: [
+                        { subtypeName: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=CarboMedics+Standard', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=CarboMedics+Fluoroscopy' }, specs: [ { size: 19, tad: 18.8, id: 14.7, oho: 6.2, goa: 1.59, model: 'RS-019' }, { size: 21, tad: 20.8, id: 16.7, oho: 6.6, goa: 2.07, model: 'RS-021' }, { size: 23, tad: 22.6, id: 18.5, oho: 7.3, goa: 2.56, model: 'RS-023' }, { size: 25, tad: 25.0, id: 20.5, oho: 7.7, goa: 3.16, model: 'RS-025' }, { size: 27, tad: 27.0, id: 22.5, oho: 8.4, goa: 3.84, model: 'RS-027' }, { size: 29, tad: 29.0, id: 24.2, oho: 8.7, goa: 4.44, model: 'RS-029' } ] },
+                        { subtypeName: { en: 'Reduced Aortic', es: 'Aórtica Reducida' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=CarboMedics+Reduced' }, specs: [ { size: 19, tad: 18.8, id: 14.7, oho: 6.2, goa: 1.59, model: 'AS-019' }, { size: 21, tad: 20.8, id: 16.7, oho: 6.6, goa: 2.07, model: 'AS-021' }, { size: 23, tad: 22.6, id: 18.5, oho: 7.3, goa: 2.56, model: 'AS-023' }, { size: 25, tad: 25.0, id: 20.5, oho: 7.7, goa: 3.16, model: 'AS-025' }, { size: 27, tad: 27.0, id: 22.5, oho: 8.4, goa: 3.84, model: 'AS-027' }, { size: 29, tad: 29.0, id: 24.2, oho: 8.7, goa: 4.44, model: 'AS-029' }, { size: 31, tad: 31.0, id: 26.2, oho: 8.7, goa: 4.44, model: 'AS-031' } ] },
+                        { subtypeName: { en: 'Top Hat Aortic', es: 'Aórtica Top Hat' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=CarboMedics+Top+Hat' }, specs: [ { size: 19, tad: 19.0, id: 14.7, oho: 6.2, goa: 1.59, model: 'TS-019' }, { size: 21, tad: 21.0, id: 16.7, oho: 6.5, goa: 2.07, model: 'TS-021' }, { size: 23, tad: 23.0, id: 18.5, oho: 7.3, goa: 2.56, model: 'TS-023' }, { size: 25, tad: 25.0, id: 20.5, oho: 7.7, goa: 3.16, model: 'TS-025' }, { size: 27, tad: 27.0, id: 22.5, oho: 8.4, goa: 3.84, model: 'TS-027' } ] }
+                    ],
+                    mitral: [ 
+                        { subtypeName: {en: 'Standard Mitral', es: 'Mitral Estándar'}, images: { main: 'https://placehold.co/600x400/c7d2fe/333333?text=CarboMedics+Mitral'}, specs: [ { size: 25, tad: 25, goa: 4.0, id: 21.0 }, { size: 27, tad: 27, goa: 4.7, id: 23.0 } ] },
+                        { subtypeName: {en: 'Optiform Mitral', es: 'Mitral Optiform'}, images: { main: 'https://placehold.co/600x400/c7d2fe/333333?text=CarboMedics+Optiform'}, specs: [ { size: 23, tad: 23, goa: 3.8, id: 19.0 }, { size: 25, tad: 25, goa: 4.5, id: 21.0 }, { size: 27, tad: 27, goa: 5.3, id: 23.0 }, { size: 29, tad: 29, goa: 6.2, id: 25.0 }, { size: 31, tad: 31, goa: 7.2, id: 27.0 }, { size: 33, tad: 33, goa: 8.3, id: 29.0 } ] }
+                    ]
+                }
             },
             {
-                id: 'ats-open-pivot', name: 'ATS Open Pivot', manufacturer: 'ATS Medical (Medtronic)',
-                images: { main: 'assets/ats_openpivot/ats-main2.png',
- 		        fluoroscopy: 'assets/ats_openpivot/ats-fluoro.png',
- 		        design: 'assets/ats_openpivot/ats-design.png',
- 		        imagen: 'assets/ats_openpivot/ats-extra.png' },
-                description: {
-                    en: 'The ATS Open Pivot AP (Advanced Performance) valve is an aortic valve with an open pivot design that minimizes thrombogenicity. It offers a very low inflow profile to reduce outflow tract obstruction.',
-                    es: 'La válvula ATS Open Pivot AP (Advanced Performance) es una válvula aórtica con un diseño de pivote abierto que minimiza la trombogenicidad. Ofrece un perfil de entrada muy bajo para reducir la obstrucción del tracto de salida.'
-                },
-                features: [
-                    { en: 'Open pivot technology for better washing', es: 'Tecnología de pivote abierto para mejor lavado' },
-                    { en: 'Ultra-low inflow profile (1.5mm)', es: 'Perfil de entrada ultra bajo (1.5mm)' },
-                    { en: 'Supra-annular design for maximum flow', es: 'Diseño supra-anular para máximo flujo' },
-                    { en: '72° opening angle', es: 'Ángulo de apertura de 72°' }
-                ],
-                cuffs: [
-                    { name: { en: 'Aortic Standard', es: 'Aórtica Estándar' }, specs: [ { size: 21, model: '500FA21', iph: 2.9, oph: 7.4, id: 16.8, od: 21.5, oa: 2.02 }, { size: 23, model: '500FA23', iph: 3.1, oph: 7.9, id: 18.8, od: 23.5, oa: 2.56 }, { size: 25, model: '500FA25', iph: 3.1, oph: 9.2, id: 20.8, od: 25.5, oa: 3.17 }, { size: 27, model: '500FA27', iph: 3.3, oph: 9.9, id: 22.8, od: 27.5, oa: 3.84 }, { size: 29, model: '500FA29', iph: 3.4, oph: 10.4, id: 24.8, od: 29.5, oa: 4.59 } ] },
-                    { name: { en: 'Aortic Advanced Performance (AP)', es: 'Aórtica Advanced Performance (AP)' }, specs: [ { size: 18, model: '501DA18', iph: 1.5, oph: 8.8, id: 16.8, od: 18.2, oa: 2.02 }, { size: 20, model: '501DA20', iph: 1.5, oph: 9.8, id: 18.8, od: 20.2, oa: 2.56 }, { size: 22, model: '501DA22', iph: 1.5, oph: 10.8, id: 20.8, od: 22.2, oa: 3.17 }, { size: 24, model: '501DA24', iph: 1.5, oph: 11.8, id: 22.8, od: 24.2, oa: 3.84 }, { size: 26, model: '501DA26', iph: 1.5, oph: 12.8, id: 24.8, od: 26.2, oa: 4.59 } ] }
-                ]
+                id: 'medtronic-ats', name: 'Medtronic (ATS)', manufacturer: 'Medtronic',
+                positions: {
+                    aortic: [
+                        { subtypeName: { en: 'ATS Aortic Standard', es: 'ATS Aórtica Estándar' }, images: { main: 'assets/ats_openpivot/ats-main2.png', fluoroscopy: 'assets/ats_openpivot/ats-fluoro.png' }, specs: [ { size: 21, model: '500FA21', iph: 2.9, oph: 7.4, id: 16.8, od: 21.5, oa: 2.02 }, { size: 23, model: '500FA23', iph: 3.1, oph: 7.9, id: 18.8, od: 23.5, oa: 2.56 }, { size: 25, model: '500FA25', iph: 3.1, oph: 9.2, id: 20.8, od: 25.5, oa: 3.17 }, { size: 27, model: '500FA27', iph: 3.3, oph: 9.9, id: 22.8, od: 27.5, oa: 3.84 }, { size: 29, model: '500FA29', iph: 3.4, oph: 10.4, id: 24.8, od: 29.5, oa: 4.59 } ] },
+                        { subtypeName: { en: 'ATS Aortic AP', es: 'ATS Aórtica AP' }, images: { main: 'assets/ats_openpivot/ats-design.png', imagen: 'assets/ats_openpivot/ats-extra.png' }, specs: [ { size: 18, model: '501DA18', iph: 1.5, oph: 8.8, id: 16.8, od: 18.2, oa: 2.02 }, { size: 20, model: '501DA20', iph: 1.5, oph: 9.8, id: 18.8, od: 20.2, oa: 2.56 }, { size: 22, model: '501DA22', iph: 1.5, oph: 10.8, id: 20.8, od: 22.2, oa: 3.17 }, { size: 24, model: '501DA24', iph: 1.5, oph: 11.8, id: 22.8, od: 24.2, oa: 3.84 }, { size: 26, model: '501DA26', iph: 1.5, oph: 12.8, id: 24.8, od: 26.2, oa: 4.59 } ] },
+                        { subtypeName: { en: 'Medtronic Standard Aortic', es: 'Medtronic Aórtica Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Medtronic+OP', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Medtronic+Fluoroscopy' }, specs: [ { size: 19, model: '500FA19', tad: 19.2, id: 14.8 }, { size: 21, model: '500FA21', tad: 21.2, id: 16.8 }, { size: 23, model: '500FA23', tad: 23.2, id: 18.8 }, { size: 25, model: '500FA25', tad: 25.2, id: 20.8 }, { size: 27, model: '500FA27', tad: 27.2, id: 22.8 }, { size: 29, model: '500FA29', tad: 29.2, id: 24.8 }, { size: 31, model: '500FA31', tad: 31.2, id: 26.8 } ] },
+                        { subtypeName: { en: 'Medtronic AP360 Aortic', es: 'Medtronic Aórtica AP360' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Medtronic+AP360', design: 'https://placehold.co/600x400/e8e8e8/333333?text=Medtronic+Design' }, specs: [ { size: 16, model: '505DA16', tad: 16.2, id: 14.8 }, { size: 18, model: '505DA18', tad: 18.2, id: 16.8 }, { size: 20, model: '505DA20', tad: 20.2, id: 18.8 }, { size: 22, model: '505DA22', tad: 22.2, id: 20.8 }, { size: 24, model: '505DA24', tad: 24.2, id: 22.8 }, { size: 26, model: '505DA26', tad: 26.2, id: 24.8 }, { size: 28, model: '505DA28', tad: 28.2, id: 26.8 } ] }
+                    ],
+                    mitral: [ { subtypeName: {en: 'ATS Mitral Standard', es: 'ATS Mitral Estándar'}, images: { main: 'https://placehold.co/600x400/c7d2fe/333333?text=ATS+Mitral'}, specs: [ { size: 25, tad: 25, oa: 4.1, id: 21.0 }, { size: 27, tad: 27, oa: 4.9, id: 23.0 } ] } ]
+                }
             },
             {
-                id: 'onx-valve', name: 'On-X', manufacturer: 'On-X Life Technologies (CryoLife)',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=On-X',
- 		fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=On-X+Fluoroscopy',
- 		design: 'https://placehold.co/600x400/e8e8e8/333333?text=On-X+Design' },
-                description: {
-                    en: 'Pure pyrolytic carbon valve with an advanced design to improve hemodynamics and reduce thrombogenicity. It features a 90° opening angle for a more physiological flow.',
-                    es: 'Válvula de carbón pirolítico puro con un diseño avanzado para mejorar la hemodinámica y reducir la trombogenicidad. Cuenta con un ángulo de apertura de 90° para un flujo más fisiológico.'
-                },
-                features: [
-                    { en: 'Pure pyrolytic carbon (no silicone)', es: 'Carbono pirolítico puro (sin silicona)' },
-                    { en: '90° opening angle', es: 'Ángulo de apertura de 90°' },
-                    { en: 'Longer leaflets for better flow', es: 'Leaflets más largos para mejor flujo' },
-                    { en: 'Low-profile design', es: 'Diseño de bajo perfil' }
-                ],
-                cuffs: [
-                    { name: {en: 'Conform-X', es: 'Conform-X'}, specs: [ { size: 19, model: 'ONXACE 19*', tad: 19.6, id: 17.4, cod: 27, ih: 10.8, oho: 13.3, oa: 2.28 }, { size: 21, model: 'ONXACE 21*', tad: 21.4, id: 19.4, cod: 30, ih: 11.9, oho: 14.7, oa: 2.84 }, { size: 23, model: 'ONXACE 23*', tad: 23.4, id: 21.4, cod: 33, ih: 13.1, oho: 16.1, oa: 3.44 }, { size: 25, model: 'ONXACE 25*', tad: 25.4, id: 23.4, cod: 36, ih: 14.2, oho: 17.0, oa: 4.11 } ] },
-                    { name: {en: 'Anatomic', es: 'Anatomic'}, specs: [ { size: 19, model: 'ONXAAE 19', tad: 19.6, id: 17.4, cod: 27, ih: 10.8, oho: 13.3, oa: 2.28 }, { size: 21, model: 'ONXAAE 21', tad: 21.4, id: 19.4, cod: 30, ih: 11.9, oho: 14.7, oa: 2.84 }, { size: 23, model: 'ONXAAE 23', tad: 23.4, id: 21.4, cod: 33, ih: 13.1, oho: 16.1, oa: 3.44 }, { size: 25, model: 'ONXAAE 25', tad: 25.4, id: 23.4, cod: 36, ih: 14.2, oho: 17.0, oa: 4.11 }, { size: '27/29', model: 'ONXAAE 27/29', tad: 29.4, id: 25.4, cod: 34, ih: 14.2, oho: 17.0, oa: 4.11 } ] },
-                    { name: {en: 'Standard', es: 'Estándar'}, specs: [ { size: 19, model: 'ONXAE-19', tad: 19.6, id: 17.4, cod: 23, ih: 10.8, oho: 13.3, oa: 2.28 }, { size: 21, model: 'ONXAE-21', tad: 21.4, id: 19.4, cod: 26, ih: 11.9, oho: 14.7, oa: 2.84 }, { size: 23, model: 'ONXAE-23', tad: 23.4, id: 21.4, cod: 29, ih: 13.1, oho: 16.1, oa: 3.44 }, { size: 25, model: 'ONXAE-25', tad: 25.4, id: 23.4, cod: 32, ih: 14.2, oho: 17.8, oa: 4.11 }, { size: '27/29', model: 'ONXAE-27/29', tad: 29.4, id: 25.4, cod: 34, ih: 14.2, oho: 17.8, oa: 4.11 } ] }
-                ]
+                id: 'onx', name: 'On-X', manufacturer: 'On-X Life Technologies (CryoLife)',
+                positions: {
+                    aortic: [
+                        { subtypeName: { en: 'Conform-X', es: 'Conform-X' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=On-X+Conform-X', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=On-X+Fluoroscopy' }, specs: [ { size: 19, model: 'ONXACE 19*', tad: 19.6, id: 17.4, cod: 27, ih: 10.8, oho: 13.3, oa: 2.28 }, { size: 21, model: 'ONXACE 21*', tad: 21.4, id: 19.4, cod: 30, ih: 11.9, oho: 14.7, oa: 2.84 }, { size: 23, model: 'ONXACE 23*', tad: 23.4, id: 21.4, cod: 33, ih: 13.1, oho: 16.1, oa: 3.44 }, { size: 25, model: 'ONXACE 25*', tad: 25.4, id: 23.4, cod: 36, ih: 14.2, oho: 17.0, oa: 4.11 } ] },
+                        { subtypeName: { en: 'Anatomic', es: 'Anatomic' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=On-X+Anatomic', design: 'https://placehold.co/600x400/e8e8e8/333333?text=On-X+Design' }, specs: [ { size: 19, model: 'ONXAAE 19', tad: 19.6, id: 17.4, cod: 27, ih: 10.8, oho: 13.3, oa: 2.28 }, { size: 21, model: 'ONXAAE 21', tad: 21.4, id: 19.4, cod: 30, ih: 11.9, oho: 14.7, oa: 2.84 }, { size: 23, model: 'ONXAAE 23', tad: 23.4, id: 21.4, cod: 33, ih: 13.1, oho: 16.1, oa: 3.44 }, { size: 25, model: 'ONXAAE 25', tad: 25.4, id: 23.4, cod: 36, ih: 14.2, oho: 17.0, oa: 4.11 }, { size: '27/29', model: 'ONXAAE 27/29', tad: 29.4, id: 25.4, cod: 34, ih: 14.2, oho: 17.0, oa: 4.11 } ] },
+                        { subtypeName: { en: 'Standard', es: 'Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=On-X+Standard' }, specs: [ { size: 19, model: 'ONXAE-19', tad: 19.6, id: 17.4, cod: 23, ih: 10.8, oho: 13.3, oa: 2.28 }, { size: 21, model: 'ONXAE-21', tad: 21.4, id: 19.4, cod: 26, ih: 11.9, oho: 14.7, oa: 2.84 }, { size: 23, model: 'ONXAE-23', tad: 23.4, id: 21.4, cod: 29, ih: 13.1, oho: 16.1, oa: 3.44 }, { size: 25, model: 'ONXAE-25', tad: 25.4, id: 23.4, cod: 32, ih: 14.2, oho: 17.8, oa: 4.11 }, { size: '27/29', model: 'ONXAE-27/29', tad: 29.4, id: 25.4, cod: 34, ih: 14.2, oho: 17.8, oa: 4.11 } ] }
+                    ],
+                    mitral: [ { subtypeName: {en: 'On-X Mitral', es: 'On-X Mitral'}, images: { main: 'https://placehold.co/600x400/c7d2fe/333333?text=On-X+Mitral'}, specs: [ { size: 25, model: 'ONXMCE 25', tad: 25.4, id: 23.4, cod: 36, ih: 14.2, oho: 17.0, oa: 4.11 } ] } ]
+                }
             },
             {
                 id: 'bicarbon', name: 'Bicarbon', manufacturer: 'Sorin (LivaNova)',
-                images: { main: 'assets/Bicarbon/bicarbon_main.png',
-                         fluoroscopy: 'assets/Bicarbon/bicarbon_fluoroscopy.png',
-                         design: 'assets/Bicarbon/bicarbon_design.png' },
-                description: {
-                    en: 'Bileaflet valve with a design that allows for hinge washing to reduce the risk of thrombosis. Available in intra-annular and supra-annular configurations.',
-                    es: 'Válvula bileaflet con un diseño que permite el lavado de las bisagras para reducir el riesgo de trombosis. Disponible en configuraciones intra-anulares y supra-anulares.'
-                },
-                features: [
-                    { en: 'Open pivot design for better washing', es: 'Diseño de pivote abierto para mejor lavado' },
-                    { en: 'Pyrolytic carbon coating', es: 'Recubrimiento de carbono pirolítico' },
-                    { en: 'Multiple configurations (Fitline, Overline, Slimline)', es: 'Múltiples configuraciones (Fitline, Overline, Slimline)' },
-                    { en: 'Low implantation profile', es: 'Bajo perfil de implantación' }
-                ],
-                cuffs: [
-                    { name: { en: 'Overline Aortic', es: 'Aórtica Overline' }, specs: [ { size: 18, model: 'ICV0506', tad: 17.2, id: 13.0, oho: 6.0, goa: 1.24 }, { size: 20, model: 'ICV0508', tad: 19.2, id: 15.0, oho: 6.8, goa: 1.63 }, { size: 22, model: 'ICV0510', tad: 21.5, id: 17.0, oho: 7.2, goa: 2.15 }, { size: 24, model: 'ICV0512', tad: 23.5, id: 19.0, oho: 7.6, goa: 2.70 } ] },
-                    { name: { en: 'Slimline Aortic', es: 'Aórtica Slimline' }, specs: [ { size: 17, model: 'ICV0636', tad: 17.2, id: 13.0, oho: 6.0, goa: 1.24 }, { size: 19, model: 'ICV0638', tad: 19.2, id: 15.0, oho: 6.8, goa: 1.63 }, { size: 21, model: 'ICV0640', tad: 21.5, id: 17.0, oho: 7.2, goa: 2.15 }, { size: 23, model: 'ICV0642', tad: 23.5, id: 19.0, oho: 7.6, goa: 2.70 }, { size: 25, model: 'ICV0644', tad: 25.0, id: 20.5, oho: 8.0, goa: 3.16 }, { size: 27, model: 'ICV0646', tad: 27.0, id: 22.5, oho: 8.6, goa: 3.82 } ] },
-                    { name: { en: 'Fitline Aortic', es: 'Aórtica Fitline' }, specs: [ { size: 17, model: 'ICV0536', tad: 17.2, id: 13.0, oho: 6.0, goa: 1.24 }, { size: 19, model: 'ICV0538', tad: 19.2, id: 15.0, oho: 6.8, goa: 1.63 }, { size: 21, model: 'ICV0540', tad: 21.5, id: 17.0, oho: 7.2, goa: 2.15 }, { size: 23, model: 'ICV0542', tad: 23.5, id: 19.0, oho: 7.6, goa: 2.70 }, { size: 25, model: 'ICV0544', tad: 25.0, id: 20.5, oho: 8.0, goa: 3.16 }, { size: 27, model: 'ICV0546', tad: 27.0, id: 22.5, oho: 8.6, goa: 3.82 } ] }
-                ]
-            },
-            {
-                id: 'medtronic-open-pivot', name: 'Medtronic Open Pivot', manufacturer: 'Medtronic',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Medtronic+OP', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Medtronic+Fluoroscopy', design: 'https://placehold.co/600x400/e8e8e8/333333?text=Medtronic+Design' },
-                description: {
-                    en: 'The Medtronic Open Pivot valve family features an open pivot design for reliable and durable hemodynamic performance. Inheritor of the ATS technology.',
-                    es: 'La familia de válvulas Medtronic Open Pivot presenta un diseño de pivote abierto para un rendimiento hemodinámico fiable y duradero. Heredera de la tecnología ATS.'
-                },
-                features: [
-                    { en: 'Open pivot technology', es: 'Tecnología de pivote abierto' },
-                    { en: 'Low-profile design', es: 'Diseño de bajo perfil' },
-                    { en: 'Conformable sewing ring', es: 'Anillo de sutura conformable' },
-                    { en: 'Available in Standard and AP360 configurations', es: 'Disponible en configuraciones estándar y AP360' }
-                ],
-                cuffs: [
-                    { name: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, specs: [ { size: 19, model: '500FA19', tad: 19.2, id: 14.8 }, { size: 21, model: '500FA21', tad: 21.2, id: 16.8 }, { size: 23, model: '500FA23', tad: 23.2, id: 18.8 }, { size: 25, model: '500FA25', tad: 25.2, id: 20.8 }, { size: 27, model: '500FA27', tad: 27.2, id: 22.8 }, { size: 29, model: '500FA29', tad: 29.2, id: 24.8 }, { size: 31, model: '500FA31', tad: 31.2, id: 26.8 } ] },
-                    { name: { en: 'AP360 Aortic', es: 'Aórtica AP360' }, specs: [ { size: 16, model: '505DA16', tad: 16.2, id: 14.8 }, { size: 18, model: '505DA18', tad: 18.2, id: 16.8 }, { size: 20, model: '505DA20', tad: 20.2, id: 18.8 }, { size: 22, model: '505DA22', tad: 22.2, id: 20.8 }, { size: 24, model: '505DA24', tad: 24.2, id: 22.8 }, { size: 26, model: '505DA26', tad: 26.2, id: 24.8 }, { size: 28, model: '505DA28', tad: 28.2, id: 26.8 } ] }
-                ]
+                positions: {
+                    aortic: [
+                        { subtypeName: { en: 'Overline Aortic', es: 'Aórtica Overline' }, images: { main: 'assets/Bicarbon/bicarbon_main.png', fluoroscopy: 'assets/Bicarbon/bicarbon_fluoroscopy.png'}, specs: [ { size: 18, model: 'ICV0506', tad: 17.2, id: 13.0, oho: 6.0, goa: 1.24 }, { size: 20, model: 'ICV0508', tad: 19.2, id: 15.0, oho: 6.8, goa: 1.63 }, { size: 22, model: 'ICV0510', tad: 21.5, id: 17.0, oho: 7.2, goa: 2.15 }, { size: 24, model: 'ICV0512', tad: 23.5, id: 19.0, oho: 7.6, goa: 2.70 } ] },
+                        { subtypeName: { en: 'Slimline Aortic', es: 'Aórtica Slimline' }, images: { main: 'assets/Bicarbon/bicarbon_slimline_main.png', figure: 'assets/Bicarbon/bicarbon_slimline_figure.png' }, specs: [ { size: 17, model: 'ICV0636', tad: 17.2, id: 13.0, oho: 6.0, goa: 1.24 }, { size: 19, model: 'ICV0638', tad: 19.2, id: 15.0, oho: 6.8, goa: 1.63 }, { size: 21, model: 'ICV0640', tad: 21.5, id: 17.0, oho: 7.2, goa: 2.15 }, { size: 23, model: 'ICV0642', tad: 23.5, id: 19.0, oho: 7.6, goa: 2.70 }, { size: 25, model: 'ICV0644', tad: 25.0, id: 20.5, oho: 8.0, goa: 3.16 }, { size: 27, model: 'ICV0646', tad: 27.0, id: 22.5, oho: 8.6, goa: 3.82 } ] },
+                        { subtypeName: { en: 'Fitline Aortic', es: 'Aórtica Fitline' }, images: { main: 'assets/Bicarbon/bicarbon_fitline_main', figure: 'assets/Bicarbon/bicarbon_fitline_figure' }, specs: [ { size: 17, model: 'ICV0536', tad: 17.2, id: 13.0, oho: 6.0, goa: 1.24 }, { size: 19, model: 'ICV0538', tad: 19.2, id: 15.0, oho: 6.8, goa: 1.63 }, { size: 21, model: 'ICV0540', tad: 21.5, id: 17.0, oho: 7.2, goa: 2.15 }, { size: 23, model: 'ICV0542', tad: 23.5, id: 19.0, oho: 7.6, goa: 2.70 }, { size: 25, model: 'ICV0544', tad: 25.0, id: 20.5, oho: 8.0, goa: 3.16 }, { size: 27, model: 'ICV0546', tad: 27.0, id: 22.5, oho: 8.6, goa: 3.82 } ] }
+                    ],
+                    mitral: [
+                        { subtypeName: {en: 'Bicarbon Fitline Mitral', es: 'Bicarbon Fitline Mitral'}, images: { main: 'assets/Bicarbon/bicarbon_fitline_mitral_main', figure: 'assets/Bicarbon/bicarbon_fitline_mitral_figure'}, specs: [ { size: 25, tad: 25, goa: 4.2, id: 21.0 }, { size: 27, tad: 27, goa: 5.0, id: 23.0 }, { size: 29, tad: 29, goa: 5.9, id: 25.0 }, { size: 31, tad: 31, goa: 6.9, id: 27.0 }, { size: 33, tad: 33, goa: 8.0, id: 29.0 } ] }
+                    ]
+                }
             },
             {
                 id: 'jyros', name: 'Jyros', manufacturer: 'Jyros Medical',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Jyros', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Jyros+Fluoroscopy' },
-                description: {
-                    en: 'Bileaflet mechanical valve with a modern design and innovative features to improve flow and reduce thrombogenicity.',
-                    es: 'Válvula mecánica bileaflet con diseño moderno y características innovadoras para mejorar el flujo y reducir la trombogenicidad.'
-                },
-                features: [
-                    { en: 'Modern bileaflet design', es: 'Diseño bileaflet moderno' },
-                    { en: 'State-of-the-art materials', es: 'Materiales de última generación' },
-                    { en: 'Low profile for minimal obstruction', es: 'Perfil bajo para mínima obstrucción' },
-                    { en: 'Optimized opening angle', es: 'Ángulo de apertura optimizado' }
-                ],
-                cuffs: [
-                    { name: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, specs: [ { size: 19, tad: 19.0, id: 15.0, oho: 6.5, goa: 1.77 }, { size: 21, tad: 21.0, id: 17.0, oho: 7.0, goa: 2.27 }, { size: 23, tad: 23.0, id: 19.0, oho: 7.5, goa: 2.84 }, { size: 25, tad: 25.0, id: 21.0, oho: 8.0, goa: 3.46 }, { size: 27, tad: 27.0, id: 23.0, oho: 8.5, goa: 4.15 } ] }
-                ]
+                positions: {
+                    aortic: [ { subtypeName: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Jyros', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Jyros+Fluoroscopy' }, specs: [ { size: 19, tad: 19.0, id: 15.0, oho: 6.5, goa: 1.77 }, { size: 21, tad: 21.0, id: 17.0, oho: 7.0, goa: 2.27 }, { size: 23, tad: 23.0, id: 19.0, oho: 7.5, goa: 2.84 }, { size: 25, tad: 25.0, id: 21.0, oho: 8.0, goa: 3.46 }, { size: 27, tad: 27.0, id: 23.0, oho: 8.5, goa: 4.15 } ] } ],
+                    mitral: []
+                }
             },
             {
                 id: 'edwards-duromedics', name: 'Edwards Duromedics', manufacturer: 'Edwards Lifesciences',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Edwards+Duromedics',
-                         fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Duromedics+Fluoroscopy' },
-                description: {
-                    en: 'Historic bileaflet valve that paved the way for modern designs. Although no longer widely used, it was important in the development of mechanical valves.',
-                    es: 'Válvula bileaflet histórica que allanó el camino para los diseños modernos. Aunque ya no se utiliza ampliamente, fue importante en el desarrollo de válvulas mecánicas.'
-                },
-                features: [
-                    { en: 'Pioneering bileaflet design', es: 'Diseño pionero bileaflet' },
-                    { en: 'Pyrolytic carbon materials', es: 'Materiales de carbono pirolítico' },
-                    { en: 'Intra-annular configuration', es: 'Configuración intra-anular' },
-                    { en: 'Predecessor of modern valves', es: 'Predecesora de las válvulas modernas' }
-                ],
-                cuffs: [
-                    { name: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, specs: [ { size: 19, tad: 19.0, id: 15.0, oho: 7.0, goa: 1.77 }, { size: 21, tad: 21.0, id: 17.0, oho: 7.5, goa: 2.27 }, { size: 23, tad: 23.0, id: 19.0, oho: 8.0, goa: 2.84 }, { size: 25, tad: 25.0, id: 21.0, oho: 8.5, goa: 3.46 }, { size: 27, tad: 27.0, id: 23.0, oho: 9.0, goa: 4.15 } ] }
-                ]
+                positions: {
+                    aortic: [ { subtypeName: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Edwards+Duromedics', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Duromedics+Fluoroscopy' }, specs: [ { size: 19, tad: 19.0, id: 15.0, oho: 7.0, goa: 1.77 }, { size: 21, tad: 21.0, id: 17.0, oho: 7.5, goa: 2.27 }, { size: 23, tad: 23.0, id: 19.0, oho: 8.0, goa: 2.84 }, { size: 25, tad: 25.0, id: 21.0, oho: 8.5, goa: 3.46 }, { size: 27, tad: 27.0, id: 23.0, oho: 9.0, goa: 4.15 } ] } ],
+                    mitral: []
+                }
             },
             {
                 id: 'meril-miltonia', name: 'Meril Miltonia', manufacturer: 'Meril Life Sciences',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Meril+Miltonia', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Miltonia+Fluoroscopy' },
-                description: {
-                    en: 'Bileaflet mechanical valve made with pyrolytic carbon alloyed with silicon and tungsten to improve radiopacity. Modern design with a good hemodynamic profile.',
-                    es: 'Válvula mecánica bileaflet fabricada con carbono pirolítico aleado con silicio y tungsteno para mejorar la radiopacidad. Diseño moderno con buen perfil hemodinámico.'
-                },
-                features: [
-                    { en: 'Pyrolytic carbon with silicon (3-8%)', es: 'Carbono pirolítico con silicio (3-8%)' },
-                    { en: 'Tungsten (12%) for radiopacity', es: 'Tungsteno (12%) para radiopacidad' },
-                    { en: 'Low-profile bileaflet design', es: 'Diseño bileaflet de bajo perfil' },
-                    { en: 'Optimized opening angle', es: 'Ángulo de apertura optimizado' }
-                ],
-                cuffs: [
-                    { name: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, specs: [ { size: 19, tad: 19.0, id: 15.5, oho: 6.8, goa: 1.89 }, { size: 21, tad: 21.0, id: 17.5, oho: 7.2, goa: 2.41 }, { size: 23, tad: 23.0, id: 19.5, oho: 7.8, goa: 2.99 }, { size: 25, tad: 25.0, id: 21.5, oho: 8.2, goa: 3.63 }, { size: 27, tad: 27.0, id: 23.5, oho: 8.8, goa: 4.34 } ] }
-                ]
+                positions: {
+                    aortic: [ { subtypeName: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=Meril+Miltonia', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=Miltonia+Fluoroscopy' }, specs: [ { size: 19, tad: 19.0, id: 15.5, oho: 6.8, goa: 1.89 }, { size: 21, tad: 21.0, id: 17.5, oho: 7.2, goa: 2.41 }, { size: 23, tad: 23.0, id: 19.5, oho: 7.8, goa: 2.99 }, { size: 25, tad: 25.0, id: 21.5, oho: 8.2, goa: 3.63 }, { size: 27, tad: 27.0, id: 23.5, oho: 8.8, goa: 4.34 } ] } ],
+                    mitral: []
+                }
             },
             {
                 id: 'hp-biplus', name: 'HP-Biplus', manufacturer: 'HP Medical',
-                images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=HP-Biplus',
-                         fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=HP-Biplus+Fluoroscopy' },
-                description: {
-                    en: 'Bileaflet mechanical valve with a low-profile design and optimized hemodynamic characteristics. Includes the HP-Biplus C model with a special configuration.',
-                    es: 'Válvula mecánica bileaflet con diseño de bajo perfil y características hemodinámicas optimizadas. Incluye modelo HP-Biplus C con configuración especial.'
-                },
-                features: [
-                    { en: 'Low-profile design', es: 'Diseño de bajo perfil' },
-                    { en: 'Intra-annular configuration', es: 'Configuración intra-anular' },
-                    { en: 'Pyrolytic carbon materials', es: 'Materiales de carbono pirolítico' },
-                    { en: '80° opening angle', es: 'Ángulo de apertura de 80°' }
-                ],
-                cuffs: [
-                    { name: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, specs: [ { size: 19, tad: 19.0, id: 15.2, oho: 6.7, goa: 1.81 }, { size: 21, tad: 21.0, id: 17.2, oho: 7.1, goa: 2.32 }, { size: 23, tad: 23.0, id: 19.2, oho: 7.6, goa: 2.90 }, { size: 25, tad: 25.0, id: 21.2, oho: 8.1, goa: 3.53 }, { size: 27, tad: 27.0, id: 23.2, oho: 8.6, goa: 4.23 } ] },
-                    { name: { en: 'HP-Biplus C', es: 'HP-Biplus C' }, specs: [ { size: 19, tad: 19.0, id: 15.5, oho: 6.5, goa: 1.89 }, { size: 21, tad: 21.0, id: 17.5, oho: 7.0, goa: 2.41 }, { size: 23, tad: 23.0, id: 19.5, oho: 7.5, goa: 2.99 }, { size: 25, tad: 25.0, id: 21.5, oho: 8.0, goa: 3.63 }, { size: 27, tad: 27.0, id: 23.5, oho: 8.5, goa: 4.34 } ] }
-                ]
+                positions: {
+                    aortic: [
+                        { subtypeName: { en: 'Standard Aortic', es: 'Aórtica Estándar' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=HP-Biplus', fluoroscopy: 'https://placehold.co/600x400/000000/ffffff?text=HP-Biplus+Fluoroscopy' }, specs: [ { size: 19, tad: 19.0, id: 15.2, oho: 6.7, goa: 1.81 }, { size: 21, tad: 21.0, id: 17.2, oho: 7.1, goa: 2.32 }, { size: 23, tad: 23.0, id: 19.2, oho: 7.6, goa: 2.90 }, { size: 25, tad: 25.0, id: 21.2, oho: 8.1, goa: 3.53 }, { size: 27, tad: 27.0, id: 23.2, oho: 8.6, goa: 4.23 } ] },
+                        { subtypeName: { en: 'HP-Biplus C', es: 'HP-Biplus C' }, images: { main: 'https://placehold.co/600x400/e8e8e8/333333?text=HP-Biplus+C' }, specs: [ { size: 19, tad: 19.0, id: 15.5, oho: 6.5, goa: 1.89 }, { size: 21, tad: 21.0, id: 17.5, oho: 7.0, goa: 2.41 }, { size: 23, tad: 23.0, id: 19.5, oho: 7.5, goa: 2.99 }, { size: 25, tad: 25.0, id: 21.5, oho: 8.0, goa: 3.63 }, { size: 27, tad: 27.0, id: 23.5, oho: 8.5, goa: 4.34 } ] }
+                    ],
+                    mitral: []
+                }
             }
         ];
 
@@ -459,7 +406,8 @@
         let currentLanguage = 'en';
         const mainScreen = document.getElementById('main-screen');
         const detailScreen = document.getElementById('detail-screen');
-        const valveListContainer = document.getElementById('valve-list');
+        const brandListContainer = document.getElementById('brand-list');
+        const viewerImg = document.getElementById('viewer-img');
         
         const modals = {
             image: document.getElementById('image-viewer'),
@@ -468,37 +416,36 @@
             about: document.getElementById('about-modal'),
             disclaimer: document.getElementById('disclaimer-modal'),
             contact: document.getElementById('contact-modal'),
+            vivor: document.getElementById('vivor-modal'),
         };
-        const viewerImg = document.getElementById('viewer-img');
 
         function setLanguage(lang) {
             currentLanguage = lang;
             document.documentElement.lang = lang;
             localStorage.setItem('valve-app-language', lang);
             updateUIText();
-            // Re-render views if they are active
-            if (!mainScreen.classList.contains('hidden')) {
-                displayValveList();
+            
+            if (detailScreen.classList.contains('hidden')) {
+                displayBrandList();
             } else {
-                 const currentValveId = detailScreen.dataset.valveId;
-                 if(currentValveId) showDetailScreen(currentValveId);
+                const currentValveId = detailScreen.dataset.valveId;
+                if(currentValveId) showDetailScreen(currentValveId);
             }
         }
 
         function updateUIText() {
-            const elements = document.querySelectorAll('[data-lang-key]');
-            elements.forEach(el => {
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
                 const key = el.dataset.langKey;
-                if (translations[currentLanguage] && translations[currentLanguage][key]) {
+                if (translations[currentLanguage]?.[key]) {
                     el.innerHTML = translations[currentLanguage][key];
                 }
             });
         }
         
-        function displayValveList() {
-            valveListContainer.innerHTML = '';
-            valvesData.sort((a, b) => a.name.localeCompare(b.name)).forEach((valve, index) => {
-                const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500', 'bg-cyan-500'];
+        function displayBrandList() {
+            brandListContainer.innerHTML = '';
+            valvesData.sort((a, b) => a.name.localeCompare(b.name)).forEach((brand, index) => {
+                const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500', 'bg-orange-500'];
                 const color = colors[index % colors.length];
 
                 const listItem = document.createElement('div');
@@ -508,104 +455,239 @@
                         <svg class="w-6 h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                     </div>
                     <div>
-                        <h3 class="font-semibold text-lg md:text-xl text-gray-800">${valve.name}</h3>
-                        <p class="text-sm md:text-base text-gray-500">${valve.manufacturer}</p>
+                        <h3 class="font-semibold text-lg md:text-xl text-gray-800">${brand.name}</h3>
+                        <p class="text-sm md:text-base text-gray-500">${brand.manufacturer}</p>
                     </div>
                 `;
-                listItem.addEventListener('click', () => showDetailScreen(valve.id));
-                valveListContainer.appendChild(listItem);
+                listItem.addEventListener('click', () => showDetailScreen(brand.id));
+                brandListContainer.appendChild(listItem);
             });
         }
         
-        function showDetailScreen(valveId) {
-            const valve = valvesData.find(v => v.id === valveId);
-            if (!valve) return;
+        function showDetailScreen(brandId) {
+            const brand = valvesData.find(v => v.id === brandId);
+            if (!brand) return;
 
-            detailScreen.dataset.valveId = valveId;
-            mainScreen.classList.add('hidden');
+            detailScreen.dataset.valveId = brandId;
+            mainScreen.classList.add('slide-out');
             detailScreen.classList.remove('hidden');
-            
+
+            const hasAortic = brand.positions.aortic && brand.positions.aortic.length > 0;
+            const hasMitral = brand.positions.mitral && brand.positions.mitral.length > 0;
+
+            const createPositionHTML = (positionData, positionName) => {
+                if (!positionData || positionData.length === 0) {
+                    const langKey = positionName === 'aortic' ? 'aortic_valves' : 'mitral_valves';
+                    return `<div class="p-4 bg-white rounded-lg shadow-sm"><p class="text-gray-500">No ${translations[currentLanguage][langKey].toLowerCase()} models available.</p></div>`;
+                }
+
+                if (positionData.length === 1) {
+                    return renderSubtype(positionData[0]);
+                }
+
+                const subtypeButtons = positionData.map((subtype, index) => `
+                    <button 
+                        class="subtype-selector flex-grow px-3 py-2 text-sm font-medium text-center border rounded-lg transition-colors focus:outline-none ${index === 0 ? 'active' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}"
+                        data-position="${positionName}" 
+                        data-index="${index}"
+                    >
+                        ${subtype.subtypeName[currentLanguage]}
+                    </button>
+                `).join('');
+
+                return `
+                    <div class="flex flex-wrap items-stretch justify-center gap-2 mb-4">${subtypeButtons}</div>
+                    <div id="${positionName}-details-container">${renderSubtype(positionData[0])}</div>
+                `;
+            };
+
+            const aorticContent = createPositionHTML(brand.positions.aortic, 'aortic');
+            const mitralContent = createPositionHTML(brand.positions.mitral, 'mitral');
+
             detailScreen.innerHTML = `
                 <header class="bg-indigo-800 text-white p-5 shadow-lg lg:rounded-t-xl flex items-center">
                     <button id="back-button" class="mr-4 bg-white/20 hover:bg-white/30 rounded-full p-2 transition-all duration-200">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">${valve.name}</h1>
-                        <p class="text-sm md:text-base opacity-80">${valve.manufacturer}</p>
+                        <h1 class="text-2xl md:text-3xl font-bold">${brand.name}</h1>
+                        <p class="text-sm md:text-base opacity-80">${brand.manufacturer}</p>
                     </div>
                 </header>
-                <main class="p-4 md:p-6 main-content overflow-y-auto">
-                    <section class="mb-8">
-                        <h2 class="text-xl font-semibold mb-4 text-gray-800">${translations[currentLanguage].details_description}</h2>
-                        <p class="text-gray-600 mb-4">${valve.description[currentLanguage]}</p>
-                        <div class="bg-blue-50 p-4 rounded-lg">
-                            <h3 class="font-medium text-blue-800 mb-2">${translations[currentLanguage].details_features}</h3>
-                            <ul class="list-disc list-inside text-blue-700">
-                                ${valve.features.map(feature => `<li>${feature[currentLanguage]}</li>`).join('')}
-                            </ul>
-                        </div>
-                    </section>
-                    <section class="mb-8">
-                        <h2 class="text-xl font-semibold mb-4 text-gray-800">${translations[currentLanguage].details_images}</h2>
-                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            ${Object.entries(valve.images).map(([key, url]) => `<img src="${url}" alt="${key}" class="gallery-image w-full h-auto rounded-lg shadow-md cursor-pointer object-cover aspect-video" data-image="${url}">`).join('')}
-                        </div>
-                    </section>
-                    <section class="mb-8">
-                        <h2 class="text-xl font-semibold mb-4 text-gray-800">${translations[currentLanguage].details_specs}</h2>
-                        <div class="bg-gray-100 p-3 rounded-lg mb-4 flex overflow-x-auto" id="cuff-selectors">
-                            ${valve.cuffs.map((cuff, index) => `<button class="cuff-selector whitespace-nowrap px-4 py-2 mx-1 rounded-lg ${index === 0 ? 'active' : ''}" data-cuff-index="${index}">${cuff.name[currentLanguage]}</button>`).join('')}
-                        </div>
-                        <div id="cuff-specs">
-                            ${valve.cuffs.map((cuff, index) => {
-                                const headers = cuff.specs.length > 0 ? Object.keys(cuff.specs[0]) : [];
-                                if (headers.length === 0) return `<div class="cuff-spec-container ${index === 0 ? '' : 'hidden'}" data-cuff-index="${index}"><p>No specs available.</p></div>`;
-                                
-                                return `<div class="cuff-spec-container ${index === 0 ? '' : 'hidden'}" data-cuff-index="${index}">
-                                    <div class="overflow-x-auto">
-                                        <table class="specs-table">
-                                            <thead><tr>${headers.map(key => `<th>${translations[currentLanguage]['header_' + key] || key}</th>`).join('')}</tr></thead>
-                                            <tbody>${cuff.specs.map(spec => `<tr>${headers.map(h => `<td>${spec[h] || ''}</td>`).join('')}</tr>`).join('')}</tbody>
-                                        </table>
-                                    </div>
-                                </div>`
-                            }).join('')}
-                        </div>
-                    </section>
+                <main class="main-content">
+                    <div class="bg-gray-100 p-2 sticky top-0 z-10 flex justify-center gap-4 border-b">
+                        ${hasAortic ? `<button class="position-selector px-4 py-2 text-gray-600 font-medium active" data-position="aortic" data-lang-key="aortic_valves">${translations[currentLanguage].aortic_valves}</button>` : ''}
+                        ${hasMitral ? `<button class="position-selector px-4 py-2 text-gray-600 font-medium" data-position="mitral" data-lang-key="mitral_valves">${translations[currentLanguage].mitral_valves}</button>` : ''}
+                    </div>
+                    <div class="p-4 md:p-6">
+                        <div id="aortic-content">${aorticContent}</div>
+                        <div id="mitral-content" class="hidden">${mitralContent}</div>
+                    </div>
                 </main>
             `;
             
+            setupDetailScreenListeners();
+        }
+
+        function renderSubtype(subtype) {
+            const headers = subtype.specs.length > 0 ? Object.keys(subtype.specs[0]) : [];
+            return `
+                <div class="mb-8 p-4 border rounded-xl shadow-sm bg-white animate-fade-in">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">${subtype.subtypeName[currentLanguage]}</h3>
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium mb-3 text-gray-700" data-lang-key="details_images">${translations[currentLanguage].details_images}</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            ${Object.entries(subtype.images).map(([key, url]) => `<img src="${url}" alt="${key}" class="gallery-image w-full h-auto rounded-lg shadow-md cursor-pointer object-cover aspect-video bg-gray-200" data-image="${url}" onerror="this.src='https://placehold.co/600x400/e8e8e8/333333?text=Image+Not+Found'">`).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-medium mb-3 text-gray-700" data-lang-key="details_specs">${translations[currentLanguage].details_specs}</h4>
+                        <div class="overflow-x-auto">
+                            <table class="specs-table">
+                                <thead><tr>${headers.map(key => `<th>${translations[currentLanguage]['header_' + key] || key.toUpperCase()}</th>`).join('')}</tr></thead>
+                                <tbody>${subtype.specs.map(spec => `<tr>${headers.map(h => `<td>${spec[h] === undefined ? '' : spec[h]}</td>`).join('')}</tr>`).join('')}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupDetailScreenListeners() {
             document.getElementById('back-button').addEventListener('click', () => {
                 detailScreen.classList.add('hidden');
-                mainScreen.classList.remove('hidden');
+                mainScreen.classList.remove('slide-out');
                 detailScreen.removeAttribute('data-valve-id');
             });
-            
-            document.querySelectorAll('.cuff-selector').forEach(selector => {
+
+            document.querySelectorAll('.position-selector').forEach(selector => {
                 selector.addEventListener('click', (e) => {
-                    const cuffIndex = e.target.dataset.cuffIndex;
-                    document.querySelectorAll('.cuff-selector').forEach(s => s.classList.remove('active'));
+                    const position = e.target.dataset.position;
+                    document.querySelectorAll('.position-selector').forEach(s => s.classList.remove('active'));
                     e.target.classList.add('active');
-                    document.querySelectorAll('.cuff-spec-container').forEach(c => {
-                        c.classList.toggle('hidden', c.dataset.cuffIndex !== cuffIndex);
-                    });
+
+                    document.getElementById('aortic-content').classList.toggle('hidden', position !== 'aortic');
+                    document.getElementById('mitral-content').classList.toggle('hidden', position !== 'mitral');
                 });
             });
+
+            const setupImageViewer = (container) => {
+                 container.querySelectorAll('.gallery-image').forEach(img => {
+                    img.addEventListener('click', (e) => {
+                        viewerImg.src = e.target.dataset.image;
+                        modals.image.classList.add('visible');
+                    });
+                });
+            };
             
-            document.querySelectorAll('.gallery-image').forEach(img => {
-                img.addEventListener('click', (e) => {
-                    viewerImg.src = e.target.dataset.image;
-                    modals.image.classList.add('visible');
+            setupImageViewer(detailScreen);
+
+            document.querySelectorAll('.subtype-selector').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const targetButton = e.currentTarget;
+                    const position = targetButton.dataset.position;
+                    const index = parseInt(targetButton.dataset.index, 10);
+                    const brandId = detailScreen.dataset.valveId;
+                    const brand = valvesData.find(v => v.id === brandId);
+
+                    if (!brand) return;
+                    const subtypeData = brand.positions[position]?.[index];
+                    if (!subtypeData) return;
+
+                    document.querySelectorAll(`.subtype-selector[data-position="${position}"]`).forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-50');
+                    });
+                    targetButton.classList.add('active');
+                    targetButton.classList.remove('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-50');
+
+                    const container = document.getElementById(`${position}-details-container`);
+                    if (container) {
+                        container.innerHTML = renderSubtype(subtypeData);
+                        setupImageViewer(container);
+                    }
                 });
             });
         }
         
+        function calculateAndDisplayViVor() {
+            const input = document.getElementById('vivor-input');
+            const resultsContainer = document.getElementById('vivor-results');
+            const diameter = parseFloat(input.value);
+            // Obtener la posición seleccionada
+            const selectedPosition = document.querySelector('input[name="vivor-position"]:checked').value;
+
+            if (isNaN(diameter) || diameter <= 0) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            const suitableValves = [];
+            valvesData.forEach(brand => {
+                // Filtrar solo por la posición seleccionada
+                const positionData = brand.positions[selectedPosition];
+                if (positionData) {
+                    positionData.forEach(subtype => {
+                        subtype.specs.forEach(spec => {
+                            // La lógica de búsqueda: diámetro interno (id) debe ser >= al diámetro introducido
+                            if (spec.id && spec.id >= diameter) {
+                                suitableValves.push({
+                                    brand: brand.name,
+                                    subtype: subtype.subtypeName[currentLanguage],
+                                    position: selectedPosition,
+                                    ...spec
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+
+            if (suitableValves.length === 0) {
+                resultsContainer.innerHTML = `<p class="text-center text-gray-500" data-lang-key="vivor_no_results">${translations[currentLanguage].vivor_no_results}</p>`;
+            } else {
+                // Ordenar para encontrar la mejor candidata (la que tenga la menor diferencia de 'id' positiva)
+                suitableValves.sort((a, b) => (a.id - diameter) - (b.id - diameter));
+
+                const resultsHTML = `
+                    <h3 class="text-lg font-semibold mb-3" data-lang-key="vivor_results_title">${translations[currentLanguage].vivor_results_title}</h3>
+                    <div class="overflow-x-auto">
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>${translations[currentLanguage].header_brand}</th>
+                                    <th>${translations[currentLanguage].header_model}</th>
+                                    <th>${translations[currentLanguage].header_size}</th>
+                                    <th>${translations[currentLanguage].header_id}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${suitableValves.map((v, index) => `
+                                    <tr class="${index === 0 ? 'best-candidate' : ''}">
+                                        <td>${v.brand}</td>
+                                        <td>${v.subtype}</td>
+                                        <td>${v.size}</td>
+                                        <td>${v.id} mm</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                resultsContainer.innerHTML = resultsHTML;
+            }
+        }
+        
         function setupEventListeners() {
-            // Options Menu
             document.getElementById('options-menu-button').addEventListener('click', () => modals.options.classList.add('visible'));
 
-            // Language Modal
+            document.getElementById('vivor-button').addEventListener('click', () => {
+                modals.options.classList.remove('visible');
+                modals.vivor.classList.add('visible');
+            });
+
+            document.getElementById('vivor-calculate-btn').addEventListener('click', calculateAndDisplayViVor);
+
             document.getElementById('lang-button').addEventListener('click', () => {
                 modals.options.classList.remove('visible');
                 modals.language.classList.add('visible');
@@ -617,7 +699,6 @@
                 });
             });
 
-            // Info Modals
             document.getElementById('about-button').addEventListener('click', () => {
                 modals.options.classList.remove('visible');
                 modals.about.classList.add('visible');
@@ -631,7 +712,6 @@
                 modals.contact.classList.add('visible');
             });
 
-            // Close modals on overlay click
             Object.values(modals).forEach(modal => {
                 modal.addEventListener('click', (e) => {
                     if (e.target === modal) {
@@ -642,9 +722,9 @@
         }
 
         function initApp() {
-            const savedLang = localStorage.getItem('valve-app-language') || 'en';
+            const savedLang = localStorage.getItem('valve-app-language') || 'en'; // Idioma por defecto cambiado a inglés
             setLanguage(savedLang);
-            displayValveList();
+            displayBrandList();
             setupEventListeners();
         }
 
@@ -652,6 +732,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
